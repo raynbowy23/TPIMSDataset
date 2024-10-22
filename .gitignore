@@ -1,0 +1,5 @@
+__pycache__/
+TPIMS/raw_data/*
+TPIMS/processed/*
+TPIMS/processed/nodes/*
+TPIMS/processed/links/*
