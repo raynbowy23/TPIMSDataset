@@ -1,5 +1,5 @@
 __pycache__/
-TPIMS/raw_data/*
+TPIMS/raw_data/*.csv
 TPIMS/processed/*
 TPIMS/processed/nodes/*
 TPIMS/processed/links/*

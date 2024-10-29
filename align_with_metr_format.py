@@ -76,12 +76,12 @@ def align_with_metr_format(output_dir):
                     s_idx = siteId_uni.index(site)
 
                     # dfNew.insert(i, site, tmp_available[s_idx]) 
-                    data_list.append(available[s_idx]/capacity_stats[j])
+                    data_list.append((capacity_stats[j] - available[s_idx])/capacity_stats[j])
 
                     available[s_idx] = tmp_available[s_idx]
                 else:
                     # Change available/occrate when the site is not found
-                    data_list.append(available[temp_s_idx]/capacity_stats[j])
+                    data_list.append((capacity_stats[j] - available[temp_s_idx])/capacity_stats[j])
                     temp_s_idx += 1
 
 

@@ -6,6 +6,7 @@ https://github.com/zezhishao/BasicTS/blob/master/scripts/data_preparation/PEMS03
 """
 
 import os
+from os import path as osp
 import sys
 import argparse
 import numpy as np
@@ -27,6 +28,7 @@ def generate_data(
     date_format="%Y-%m-%d %H:%M:%S",
     save_data=True,
     split="default",
+    data_size="medium"
 ):
     """Preprocess and generate train/valid/test datasets.
     
@@ -110,9 +112,10 @@ def generate_data(
     print("number of validation samples: {0}".format(len(valid_index)))
     print("number of test samples: {0}".format(len(test_index)))
     
-    sc = MinMaxScaler(feature_range=(0,1))
-    data_norm = sc.fit_transform(data.squeeze(-1))
-    data_norm = np.expand_dims(data_norm, axis=-1)
+    # sc = MinMaxScaler(feature_range=(0,1))
+    # data_norm = sc.fit_transform(data.squeeze(-1))
+    # data_norm = np.expand_dims(data_norm, axis=-1)
+    data_norm = data
 
     # add external feature
     feature_list = [data_norm]
@@ -144,14 +147,16 @@ def generate_data(
     print("data shape: {0}".format(processed_data.shape))
 
     # dump data
-    np.savez_compressed(os.path.join(dataset_dir, f"index_{history_seq_len}_{future_seq_len}.npz"), train=train_index, val=valid_index, test=test_index)
+    np.savez_compressed(osp.join(dataset_dir, f"index_{data_size}_{history_seq_len}_{future_seq_len}.npz"), train=train_index, val=valid_index, test=test_index)
     if save_data:
-        np.savez_compressed(os.path.join(dataset_dir, f"data.npz"), data=processed_data)
+        np.savez_compressed(osp.join(dataset_dir, f"data_{data_size}.npz"), data=processed_data)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, 
                         default="METRLA", help="Which dataset to run")
+    parser.add_argument("--dataset_root", type=str,
+                        default="dataset", help="Root directory of the dataset")
     parser.add_argument("--data_size", type=str, 
                         default="medium", help="Which dataset to run")
     parser.add_argument("-s", "--history_seq_len", type=int,
@@ -160,16 +165,9 @@ if __name__ == "__main__":
                         default=12, help="Future sequence length.")
     parser.add_argument("--target_channel", type=list,
                         default=[0], help="Selected channels.")
-    # parser.add_argument("--tod", action="store_true",
-    #                     help="Add feature time_of_day.")
-    # parser.add_argument("--dow", action="store_true",
-    #                     help="Add feature day_of_week.")
-    # parser.add_argument("--train_ratio", type=float,
-    #                     default=False, help="Train ratio")
-    # parser.add_argument("--valid_ratio", type=float,
-    #                     default=False, help="Validate ratio.")
     args = parser.parse_args()
     
+    DATASET_ROOT = args.dataset_root
     DATASET_NAME = args.dataset.lower()
     DATA_SIZE = args.data_size.lower()
     
@@ -179,12 +177,14 @@ if __name__ == "__main__":
     param_dict["target_channel"] = args.target_channel # target channel(s)
     param_dict["add_time_of_day"] = True # if add time_of_day feature
     param_dict["add_day_of_week"] = True # if add day_of_week feature
-    param_dict["dataset_dir"] = os.path.join(DATASET_NAME)
+    param_dict["dataset_dir"] = osp.join(DATASET_ROOT, DATASET_NAME.upper(), 'processed')
 
-    param_dict["data_file_path"] = os.path.join(DATASET_NAME, f"{DATASET_NAME}_{DATA_SIZE}.csv")
+    param_dict["data_file_path"] = osp.join(param_dict["dataset_dir"], f"{DATASET_NAME}_{DATA_SIZE}.csv")
     param_dict["train_ratio"] = 0.2
     param_dict["valid_ratio"] = 0
     param_dict["steps_per_day"] = 144 # 10 minutes split
+
+    param_dict["data_size"] = args.data_size
         
     # print args
     print("-"*(20+45+5))
@@ -192,17 +192,17 @@ if __name__ == "__main__":
         print("|{0:>20} = {1:<45}|".format(key, str(value)))
     print("-"*(20+45+5))
     
-    data_path = os.path.join(param_dict["dataset_dir"], f"data_{args.history_seq_len}_{args.future_seq_len}.npz")
-    index_path = os.path.join(param_dict["dataset_dir"], f"index_{args.history_seq_len}_{args.future_seq_len}.npz")
+    data_path = osp.join(param_dict["dataset_dir"], f"data_{args.history_seq_len}_{args.future_seq_len}.npz")
+    index_path = osp.join(param_dict["dataset_dir"], f"index_{args.history_seq_len}_{args.future_seq_len}.npz")
 
     param_dict["save_data"] = True
-    if os.path.exists(data_path) and os.path.exists(index_path):
+    if osp.exists(data_path) and osp.exists(index_path):
         reply = str(input(
-            f"{os.path.join(param_dict['dataset_dir'], f'data.npz and index_{args.history_seq_len}_{args.future_seq_len}.npz')} exist. Do you want to overwrite them? (y/n) "
+            f"{osp.join(param_dict['dataset_dir'], f'data.npz and index_{args.history_seq_len}_{args.future_seq_len}.npz')} exist. Do you want to overwrite them? (y/n) "
             )).lower().strip()
         if reply[0] != "y":
             sys.exit(0)
-    elif os.path.exists(data_path) and not os.path.exists(index_path):
+    elif osp.exists(data_path) and not osp.exists(index_path):
         print("Generating new indices...")
         param_dict["save_data"] = False
             
